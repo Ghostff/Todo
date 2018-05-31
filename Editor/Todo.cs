@@ -279,16 +279,6 @@ public class TodoEditor : EditorWindow
                                     EditorGUILayout.LabelField(td.title, FontAndWith(12, 100, Color.grey, FontStyle.Bold));
                                 GUILayout.EndHorizontal();
 
-                                // if (!td.done)
-                                // 	td.type = Todo.Type.Normal;
-
-                                if (td.show)
-                                {
-                                    GUILayout.BeginVertical("box");
-                                    //	EditorGUILayout.LabelField(td.description, FontAndWith(12, 0, GetColor(td.type), FontStyle.Bold));
-                                    GUILayout.EndVertical();
-                                }
-
                             GUILayout.EndVertical();
                         }
                     GUILayout.EndVertical();
@@ -360,6 +350,5 @@ public class TodoEditor : EditorWindow
     void OnDestroy()
     {
         Save();
-    }	
-    
+    }	    
 }
