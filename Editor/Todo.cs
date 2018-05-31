@@ -7,15 +7,6 @@ using TD = Todo.TodoDB;
 
 public class Todo : ScriptableObject
 {
-	public enum Type
-	{
-		Normal,
-		InProgress,
-		Urgent,
-		Bug,
-		Testing
-	}
-
 	[Serializable] public class TodoDB
 	{
 		public string title;
@@ -30,9 +21,9 @@ public class Todo : ScriptableObject
 
 public class TodoEditor : EditorWindow
 {
+	private string dir = "Assets/Scripts/Editor/Resources/";
 	private Todo target;
 	private string description;
-	private string dir = "Assets/Scripts/Editor/Resources/";
 	private string errorMsg;
 	private int editing = -1;
 	private new string title;
@@ -369,9 +360,7 @@ public class TodoEditor : EditorWindow
 	
 	void OnDestroy()
 	{
-		EditorUtility.SetDirty(target);
-		AssetDatabase.SaveAssets();
-		AssetDatabase.SaveAssets();
+		Save();
 	}	
     
 }
