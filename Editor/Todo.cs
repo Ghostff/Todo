@@ -134,7 +134,6 @@ public class TodoEditor : EditorWindow
 
         GUIStyle margin = new GUIStyle(GUI.skin.button);
         margin.margin = new RectOffset(0, 0, 0, 0);
-        margin.fixedWidth = 50;
 
         EditorStyles.textField.wordWrap = true;
         GUILayout.BeginArea(new Rect(0, 0, Screen.width, Screen.height - 145));
@@ -187,6 +186,7 @@ public class TodoEditor : EditorWindow
                                 EditorGUILayout.LabelField(td.title, FontAndWith(12, 100, GetColor(first ? -1 : td.type), FontStyle.Bold));
                                 types[0] = null;
                                 td.type = EditorGUILayout.Popup(td.type, types, GUILayout.Width(100));
+                                margin.fixedWidth = 60;
                                 if(GUILayout.Button((editing == i) ? "Cancel" : "Edit", margin))
                                 {
                                     if (editing == i)
@@ -348,13 +348,14 @@ public class TodoEditor : EditorWindow
 
         GUILayout.BeginVertical("box");
 
+            bool edit = (editing > -1);
             GUILayout.BeginHorizontal();
                 GUILayout.Label("CREATES TASK (⇑:move up, ⇓:move down, ⊞:show content, ⊟:hide content)");
                 GUILayout.Label(errorMsg, C(Color.red));
             EditorGUILayout.EndHorizontal();
             GUILayout.BeginVertical("box");
                 GUILayout.BeginHorizontal();
-                    string label = (editing > -1) ? "Label(EDITING): " : "Label: ";
+                    string label = edit ? "Label(EDITING): " : "Label: ";
                     title = EditorGUILayout.TextField(label, title);
                     type = EditorGUILayout.Popup(type, types, GUILayout.Width(100));
                 EditorGUILayout.EndHorizontal();
@@ -362,7 +363,7 @@ public class TodoEditor : EditorWindow
             GUILayout.EndVertical();
 
              GUILayout.BeginVertical("box");
-                if(GUILayout.Button("Add New Task"))
+                if(GUILayout.Button(edit ? "Update Task" : "Add New Task"))
                 {
                     if (title.Trim() == "")
                     {
@@ -381,7 +382,7 @@ public class TodoEditor : EditorWindow
                         description = "";
                         GUI.FocusControl(null);
                     
-                        if (editing == -1)
+                        if (! edit)
                             target.todo.Add(newTd);
                         else
                         {
