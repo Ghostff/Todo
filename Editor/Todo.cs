@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -12,12 +12,12 @@ public class Todo : ScriptableObject
         public string title;
         public int type;
         public bool show;
-        public bool done;
-        public bool deleted;
         public string description;
     }
 
     public List<TodoDB> todo = new List<TodoDB>();
+    public List<TodoDB> done = new List<TodoDB>();
+    public List<TodoDB> deleted = new List<TodoDB>();
 }
 
 public class TodoEditor : EditorWindow
@@ -31,7 +31,7 @@ public class TodoEditor : EditorWindow
     private new string title;
     private int type = 1;
     private Vector2 scrollPos;
-    private bool edit;
+    private string commitMsg;
     private int show;
     private bool showCommit;
 
@@ -122,70 +122,45 @@ public class TodoEditor : EditorWindow
                     type = 1,
                     description = "Go ahead and delete me. :)"
                 });
-                Save();
             }
         }
 
-        string[] types = new string[6] {
-            "All", "Feature", "Enhance", "Modify", "Bug", "Test"	
-        };
-
-        string commitMsg = "Changes:";
+        string[] types = new string[6] {"All", "Feature", "Enhance", "Modify", "Bug", "Test"};
 
         GUIStyle margin = new GUIStyle(GUI.skin.button);
         margin.margin = new RectOffset(0, 0, 0, 0);
 
         EditorStyles.textField.wordWrap = true;
         GUILayout.BeginArea(new Rect(0, 0, Screen.width, Screen.height - 145));
+
             GUILayout.BeginVertical("box");
 
-                int size = target.todo.Count - 1;
-                int last = 0;
-                int completed= 0;
-                bool hasTask = false;
-                for (int i = 0; i <= size; i++)
-                {
-                    if (! target.todo[i].done)
-                        last = i;
-                }
-                
                 GUILayout.BeginHorizontal();
                     GUILayout.Label("PENDING TASKS:", EditorStyles.boldLabel);
                     show = EditorGUILayout.Popup(show, types, GUILayout.Width(100));
                 GUILayout.EndHorizontal();
                 
                 scrollPos = GUILayout.BeginScrollView(scrollPos,false,true);
-                
                 GUILayout.BeginVertical("box");
-                    bool first = true;
-                    int lastId = 0;
-                    for (int i = 0; i <= size; i++)
+                    int size = target.todo.Count - 1;
+                    for (int i = size; i >= 0; i--)
                     {
                         TD td = target.todo[i];
-                        if (td.deleted)
-                            continue;
-                            
-                        if (td.done)
-                        {
-                            commitMsg += ConCat(td.type, td.title);
-                            completed++;
-                            continue;
-                        }
-                        else if (show != 0 && show != td.type)
-                        {
-                            continue;
-                        }
-
-                        hasTask = true;
+                        int color = (i == size) ? -1 : td.type;
 
                         GUILayout.BeginVertical("box");
 
                             GUILayout.BeginHorizontal();
                         
-                                td.done = EditorGUILayout.Toggle(td.done, GUILayout.Width(20));
-                                EditorGUILayout.LabelField(td.title, FontAndWith(12, 100, GetColor(first ? -1 : td.type), FontStyle.Bold));
+                                if (EditorGUILayout.Toggle(false, GUILayout.Width(20)))
+                                {
+                                    target.done.Add(td);
+                                    target.todo.RemoveAt(i);
+                                    return;
+                                }
+                                EditorGUILayout.LabelField(td.title, FontAndWith(12, 100, GetColor(color), FontStyle.Bold));
                                 types[0] = null;
-                                td.type = EditorGUILayout.Popup(td.type, types, GUILayout.Width(100));
+                                td.type = EditorGUILayout.Popup(td.type, types, GUILayout.Width(80));
                                 margin.fixedWidth = 60;
                                 if(GUILayout.Button((editing == i) ? "Cancel" : "Edit", margin))
                                 {
@@ -205,52 +180,37 @@ public class TodoEditor : EditorWindow
                                     }
                                 }
                                 
-                                TD next = target.todo.ElementAtOrDefault(i + 1);
-                                TD prev = target.todo.ElementAtOrDefault(lastId);
-                                margin.fixedWidth = 20;
-
-                                if(first)
+                            
+                                if (size > 0)
                                 {
-                                    if(GUILayout.Button("⇓", margin))
+                                    margin.fixedWidth = 20;
+                                    if (i == size)
                                     {
-                                        if (next != null)
+                                        if(GUILayout.Button("⇓", margin))
                                         {
-                                            target.todo[i] = next;
-                                            target.todo[i + 1] = td;
-                                            Save();
-                                        }
-                                    }
-                                }
-                                else if(i == last)
-                                {
-                                    if(GUILayout.Button("⇑", margin))
-                                    {
-                                        if (prev != null)
-                                        {
+                                            target.todo[i] = target.todo[i - 1];
                                             target.todo[i - 1] = td;
-                                            target.todo[i] = prev;
-                                            Save();
                                         }
                                     }
-                                }
-                                else
-                                {
-                                    if(GUILayout.Button("⇑", margin))
+                                    else if (i == 0)
                                     {
-                                        if (prev != null)
+                                        if(GUILayout.Button("⇑", margin))
                                         {
-                                            target.todo[i - 1] = td;
-                                            target.todo[i] = prev;
-                                            Save();
-                                        }
-                                    }
-                                    if(GUILayout.Button("⇓", margin))
-                                    {
-                                        if (next != null)
-                                        {
+                                            target.todo[i] = target.todo[i + 1];
                                             target.todo[i + 1] = td;
-                                            target.todo[i] = next;
-                                            Save();
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if(GUILayout.Button("⇑", margin))
+                                        {
+                                            target.todo[i] = target.todo[i + 1];
+                                            target.todo[i + 1] = td;
+                                        }
+                                        if(GUILayout.Button("⇓", margin))
+                                        {
+                                            target.todo[i] = target.todo[i - 1];
+                                            target.todo[i - 1] = td;
                                         }
                                     }
                                 }
@@ -274,22 +234,19 @@ public class TodoEditor : EditorWindow
                             if (td.show)
                             {
                                 GUILayout.BeginVertical("box");
-                                    EditorGUILayout.LabelField(td.description, FontAndWith(12, 0, GetColor(first ? -1 : td.type), FontStyle.Bold, true));
+                                    EditorGUILayout.LabelField(td.description, FontAndWith(12, 0, GetColor(color), FontStyle.Bold, true));
                                 GUILayout.EndVertical();
                             }
-
-                            first = false;
-                            lastId = i;
 
                         GUILayout.EndVertical();
                     }
 
-                    if (! hasTask)
-                    {
+                    if (size < 0)
                         EditorGUILayout.LabelField("No Task", EditorStyles.largeLabel);
-                    }
+
                 GUILayout.EndVertical();
                 
+                int completed = target.done.Count;
                 if (completed > 0)
                 {
                     GUILayout.Space(10);
@@ -299,10 +256,15 @@ public class TodoEditor : EditorWindow
                         if(GUILayout.Button(showCommit ? "Hide commit message" : "Show commit message", GUILayout.Width(150)))
                             showCommit = ! showCommit;
 
-                        bool delete = false;
                         if(GUILayout.Button("Delete Completed", GUILayout.Width(150)))
+                        {
                             if (EditorUtility.DisplayDialog("Warning!", "Are you sure you want to delete all completed tasks?",  "Yes", "No"))
-                                delete = true;
+                            {
+                                target.deleted.AddRange(target.done);
+                                target.done.Clear();
+                                return;
+                            }
+                        }
                     
                     GUILayout.EndHorizontal();
                     GUILayout.BeginVertical("box");
@@ -314,27 +276,26 @@ public class TodoEditor : EditorWindow
                             GUILayout.EndVertical();
                         }
                         
-                        for (int i = 0; i < target.todo.Count; i++)
+                        commitMsg = "Changes:";
+                        for (int i = 0; i < completed; i++)
                         {
-                            TD td = target.todo[i];
-                            if (! td.done || td.deleted)
-                                continue;
-                            
-                            if (delete)
-                                td.deleted = true;
-
+                            TD td = target.done[i];
                             GUILayout.BeginVertical("box");
+                            commitMsg += ConCat(td.type, td.title);
 
                                 GUILayout.BeginHorizontal();
-                                    td.done = EditorGUILayout.Toggle(td.done, GUILayout.Width(20));
+                                    if (! EditorGUILayout.Toggle(true, GUILayout.Width(20)))
+                                    {
+                                        target.todo.Add(td);
+                                        target.done.RemoveAt(i);
+                                        return;
+                                    }
                                     EditorGUILayout.LabelField(td.title, FontAndWith(12, 100, GetColor(td.type, 100), FontStyle.Bold));
                                 GUILayout.EndHorizontal();
 
                             GUILayout.EndVertical();
                         }
 
-                        if (delete)
-                            return;
                     GUILayout.EndVertical();
                 }
 
@@ -342,8 +303,6 @@ public class TodoEditor : EditorWindow
             GUILayout.EndVertical();
         GUILayout.EndArea();
         
-
-
         GUILayout.FlexibleSpace();
 
         GUILayout.BeginVertical("box");
@@ -357,7 +316,7 @@ public class TodoEditor : EditorWindow
                 GUILayout.BeginHorizontal();
                     string label = edit ? "Label(EDITING): " : "Label: ";
                     title = EditorGUILayout.TextField(label, title);
-                    type = EditorGUILayout.Popup(type, types, GUILayout.Width(100));
+                    type = EditorGUILayout.Popup(type, types, GUILayout.Width(80));
                 EditorGUILayout.EndHorizontal();
                 description = EditorGUILayout.TextArea(description, GUILayout.Height(40));
             GUILayout.EndVertical();
@@ -389,23 +348,16 @@ public class TodoEditor : EditorWindow
                             target.todo[editing] = newTd;
                             editing = -1;
                         }
-                        Save();
                     }
                 }
              GUILayout.EndVertical();
         GUILayout.EndVertical();
-    }
 
-    private void Save()
-    {
-        EditorUtility.SetDirty(target);
-        AssetDatabase.SaveAssets();
-        AssetDatabase.SaveAssets();
     }
     
     void OnDestroy()
     {
-        Save();
-    }	
-    
+        EditorUtility.SetDirty(target);
+        AssetDatabase.SaveAssets();
+    }
 }
